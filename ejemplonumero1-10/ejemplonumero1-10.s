@@ -1,31 +1,34 @@
 .data
-mensaje: .asciz "%ld\n"
+mensaje: .asciz "%ld \n"
+
 
 .text
 .global main
-.extern printf # Usamos la función printf de libc
+.extern printf          # Indico que quiero utilizar la funcion printf de libc
+
 
 main:
-   subq $8, %rsp # Alineamos la pila para llamadas a funciones
+	subq $8, %rsp   #Alineacion de datos
+	xorq %rbx, %rbx         # rbx=0, rbx y no rax ya que printf usa rax y le asigna 3 al finalizar
 
-    mov $1, %rax   # Inicializamos rax con 1
 
-loop:
-    cmp $11, %rax  # Comparamos si rax es menor o igual a 10
-    jg salir       # Si rax > 10, salimos
-    
-    lea mensaje(%rip), %rdi  # Cargamos la dirección del mensaje
-    movq $mensaje, %rdi  # Dirección del mensaje
-    movq %rax, %rsi      # Número a imprimir
-    xorq %rax, %rax      # Limpiamos rax para printf
-    call printf          # Llamamos a printf
-    
-    inc %rax             # Incrementamos rax
-    jmp loop             # Repetimos el proceso
+dowhile:			# inicio del ciclo
+	incq %rbx		# rbx++
+	# Bloque de impresion
+        # printf("%ld \n", rbx);
+        #           rdi  , rsi
+	movq $mensaje, %rdi
+        movq %rbx, %rsi
+	xorq %rax, %rax         # rax=0
+	call printf
+	cmpq $10, %rbx		# resta 10 con rbx pero no guarda el resultado en rbx
+				# solo hace la operacion alterando el registro de banderas
+				# para rbx < 10 activara el bit de CF en el registro eflags
+				# para rbx = 10 significara 10-10=0 lo que activara ZF y no CF en este caso no salta
 
-salir:
-    addq $8, %rsp   # Restauramos la alineación
-
-    mov $60, %rax  # Llamamos a sys_exit
-    xorq %rdi, %rdi # Código de salida 0
-    syscall         # Salimos
+	JB dowhile		# salto al inicio del ciclo
+	addq $8, %rsp   # Alineacion de datos original
+        # Salir del sistema
+	mov $60, %rax   # Indico que vamos a usar la funcion exit
+        xor %rdi, %rdi  # Indico que el argumento tiene un valor de 0
+        syscall        
